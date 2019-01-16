@@ -1,0 +1,26 @@
+{
+    "name": "reluem/BBR_calendar",
+    "type": "contao-bundle",
+    "authors": [
+        {
+            "name": "Lucas Rech",
+            "email": "reluem@icloud.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Reluem\\BBRCalendarBundle\\": "src/"
+        },
+        "classmap": [
+            "src/Resources/contao/"
+        ],
+        "exclude-from-classmap": [
+            "src/Resources/contao/config/",
+            "src/Resources/contao/dca/",
+            "src/Resources/contao/languages/"
+        ]
+    },
+    "extra": {
+        "contao-manager-plugin": "Reluem\\BBRCalendarBundle\\ContaoManager\\Plugin"
+    }
+}
