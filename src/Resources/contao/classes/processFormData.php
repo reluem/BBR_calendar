@@ -3,59 +3,61 @@
     
     namespace reluem;
     
-    use Contao\Backend;
+    use Codefog\EventsSubscriptions\Event\SubscribeEvent;
+    use Contao\CalendarEventsModel;
+    use Eluceo\iCal\Component\Calendar;
+    use Eluceo\iCal\Component\Event;
     
-    class processFormData extends Backend
+    
+    class processFormData
     {
         
-        public function myProcessFormData($arrPost, $arrForm, $arrFiles)
+        
+        /**
+         * On subscribe to event
+         *
+         * @param SubscribeEvent $event
+         */
+        public function onSubscribe(SubscribeEvent $event)
         {
-            dump($this);
-            dump($arrPost);
-            
-            // 3. Echo out the ics file's contents
-            $ics = "BEGIN:VCALENDAR\r\n";
-            $ics .= "VERSION:2.0\r\n";
-            $ics .= "PRODID:-//hacksw/handcal//NONSGML v1.0//EN\r\n";
-            $ics .= "CALSCALE:GREGORIAN\r\n";
-            // Timezone-settings borrowed from
-            // http://pcal.gedaechtniskirche.com/termine/index.php?cal=kwg-probenplan&ics
-            $ics .= "BEGIN:VTIMEZONE\r\n";
-            $ics .= "TZID:Europe/Berlin\r\n";
-            $ics .= "BEGIN:DAYLIGHT\r\n";
-            $ics .= "TZOFFSETFROM:+0100\r\n";
-            $ics .= "DTSTART:19810329T020000\r\n";
-            $ics .= "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\r\n";
-            $ics .= "TZNAME:MESZ\r\n";
-            $ics .= "END:DAYLIGHT\r\n";
-            $ics .= "BEGIN:STANDARD\r\n";
-            $ics .= "TZOFFSETFROM:+0200\r\n";
-            $ics .= "DTSTART:19961027T030000\r\n";
-            $ics .= "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\r\n";
-            $ics .= "TZNAME:MEZ\r\n";
-            $ics .= "END:STANDARD\r\n";
-            $ics .= "END:VTIMEZONE\r\n";
-            $ics .= "BEGIN:VEVENT\r\n";
-            $ics .= "DTEND;TZID=Europe/Berlin:" . date('Ymd\THis\Z', $this->dateEnd) . "\r\n";
-            $ics .= "UID:" . $this->eventId . "\r\n";
-            $ics .= "DTSTAMP:TZID=Europe/Berlin:" . date('Ymd\THis\Z', $this->dateStart) . "\r\n";
-            $ics .= "DTSTART;TZID=Europe/Berlin:" . date('Ymd\THis\Z', $this->dateStart) . "\r\n";
-            $ics .= "END:VEVENT\r\n";
-            $ics .= "END:VCALENDAR\r\n";
-            
-            dump($ics);
-            
-            /* XML schreiben */
-            if ($ics) {
-                
-                $filename = 'export-' . time(); //export-1420066800
-                $path = 'export/' . $filename . '.ics'; //export/export-1420066800.ics
-                
-                if (!file_exists($path)) {
-                    file_put_contents($path, $ics); //Datei schreiben
-                }
-                
+            $arrData = $event->getModel();
+            $objEvent = \CalendarEventsModel::findOneBy('id', $arrData->pid);
+            if ($objEvent) {
+                $this->generateIcsFile($objEvent);
             }
+            
+            
+        }
+        
+        
+        public function generateIcsFile(CalendarEventsModel $objEvent): void
+        {
+            $vCalendar = new Calendar(Environment::get('url'));
+            $vEvent = new Event();
+            $noTime = false;
+            if ($objEvent->startTime === $objEvent->startDate && $objEvent->endTime === $objEvent->endDate) {
+                $noTime = true;
+            }
+            $vEvent
+                ->setDtStart(\DateTime::createFromFormat('d.m.Y - H:i:s',
+                    date('d.m.Y - H:i:s', (int)$objEvent->startTime)))
+                ->setDtEnd(\DateTime::createFromFormat('d.m.Y - H:i:s', date('d.m.Y - H:i:s', (int)$objEvent->endTime)))
+                ->setSummary(strip_tags($this->replaceInsertTags($objEvent->title)))
+                ->setUseUtc(false)
+                ->setLocation($objEvent->location)
+                ->setNoTime($noTime);
+            // HOOK: modify the vEvent
+            if (isset($GLOBALS['TL_HOOKS']['modifyIcsFile']) && is_array($GLOBALS['TL_HOOKS']['modifyIcsFile'])) {
+                foreach ($GLOBALS['TL_HOOKS']['modifyIcsFile'] as $callback) {
+                    $this->import($callback[0]);
+                    $this->{$callback[0]}->{$callback[1]}($vEvent, $objEvent, $this);
+                }
+            }
+            $vCalendar->addComponent($vEvent);
+            header('Content-Type: text/calendar; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $objEvent->alias . '.ics"');
+            echo $vCalendar->render();
+            exit;
         }
         
     }

@@ -1,26 +1,33 @@
 {
-    "name": "reluem/BBR_calendar",
-    "type": "contao-bundle",
-    "authors": [
-        {
-            "name": "Lucas Rech",
-            "email": "reluem@icloud.com"
-        }
-    ],
-    "autoload": {
-        "psr-4": {
-            "Reluem\\BBRCalendarBundle\\": "src/"
-        },
-        "classmap": [
-            "src/Resources/contao/"
-        ],
-        "exclude-from-classmap": [
-            "src/Resources/contao/config/",
-            "src/Resources/contao/dca/",
-            "src/Resources/contao/languages/"
-        ]
-    },
-    "extra": {
-        "contao-manager-plugin": "Reluem\\BBRCalendarBundle\\ContaoManager\\Plugin"
+  "name": "reluem/BBR_calendar",
+  "type": "contao-bundle",
+  "authors": [
+    {
+      "name": "Lucas Rech",
+      "email": "reluem@icloud.com"
     }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "contao/core-bundle": "^4.0",
+    "contao/calendar-bundle": "^4.0",
+    "contao-community-alliance/composer-plugin": "^3.0",
+    "eluceo/ical": "~0.6"
+  },
+  "autoload": {
+    "psr-4": {
+      "Reluem\\BBRCalendarBundle\\": "src/"
+    },
+    "classmap": [
+      "src/Resources/contao/"
+    ],
+    "exclude-from-classmap": [
+      "src/Resources/contao/config/",
+      "src/Resources/contao/dca/",
+      "src/Resources/contao/languages/"
+    ]
+  },
+  "extra": {
+    "contao-manager-plugin": "Reluem\\BBRCalendarBundle\\ContaoManager\\Plugin"
+  }
 }
