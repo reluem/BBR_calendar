@@ -9,6 +9,7 @@
     use Contao\BackendTemplate;
     use Contao\CalendarEventsModel;
     use Contao\Environment;
+    use Contao\System;
     use Contao\Events;
     use Contao\Input;
     use Eluceo\iCal\Component\Calendar;
@@ -22,24 +23,10 @@
         public function getNotificationTokens()
         {
             dump($this->subscriptionModel);
-            dump($GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE']);
-            $buffer[] = ['ics_file' => $this->generateIcsFile()];
-            dump($buffer);
-            count(l);
-        }
-        
-        /**
-         * On subscribe to event
-         *
-         * @param SubscribeEvent $event
-         */
-        public function onSubscribe(SubscribeEvent $event)
-        {
-            $arrData = $event->getModel();
-            $objEvent = \CalendarEventsModel::findOneBy('id', $arrData->pid);
-            if ($objEvent) {
-                $this->generateIcsFile($objEvent);
-            }
+            $objEvent = \CalendarEventsModel::findOneBy('id', $this->subscriptionModel->pid);
+            $buffer = parent::getNotificationTokens();
+            $buffer['ics_file'] = $this->generateIcsFile($objEvent);
+            return $buffer;
         }
         
         
@@ -67,6 +54,9 @@
                 $objFile = new \File('web/share/' . $objEvent->alias . '.ics');
                 $objFile->write($ics);
                 $objFile->close();
+                return $objFile->path;
+            } else {
+                return null;
             }
         }
         
