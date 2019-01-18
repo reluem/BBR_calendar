@@ -19,6 +19,8 @@
                 BundleConfig::create(BBRCalendarBundle::class)
                     ->setLoadAfter([
                         ContaoCoreBundle::class,
+                        'events_subscriptions',
+                        'notification_center',
                     ]),
             ];
         }

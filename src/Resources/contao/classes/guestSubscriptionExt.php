@@ -1,17 +1,32 @@
 <?php
     
     
-    namespace reluem;
+    namespace Reluem\BBRCalendarBundle;
     
     use Codefog\EventsSubscriptions\Event\SubscribeEvent;
+    use Codefog\EventsSubscriptions\Subscription\GuestSubscription;
+    use Codefog\EventsSubscriptions\Subscription\SubscriptionInterface;
+    use Contao\BackendTemplate;
     use Contao\CalendarEventsModel;
+    use Contao\Environment;
+    use Contao\Events;
+    use Contao\Input;
     use Eluceo\iCal\Component\Calendar;
     use Eluceo\iCal\Component\Event;
+    use Patchwork\Utf8;
     
     
-    class processFormData
+    class guestSubscriptionExt extends guestSubscription
     {
         
+        public function getNotificationTokens()
+        {
+            dump($this->subscriptionModel);
+            dump($GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE']);
+            $buffer[] = ['ics_file' => $this->generateIcsFile()];
+            dump($buffer);
+            count(l);
+        }
         
         /**
          * On subscribe to event
@@ -25,12 +40,10 @@
             if ($objEvent) {
                 $this->generateIcsFile($objEvent);
             }
-            
-            
         }
         
         
-        public function generateIcsFile(CalendarEventsModel $objEvent): void
+        public function generateIcsFile(CalendarEventsModel $objEvent)
         {
             $vCalendar = new Calendar(Environment::get('url'));
             $vEvent = new Event();
@@ -42,22 +55,19 @@
                 ->setDtStart(\DateTime::createFromFormat('d.m.Y - H:i:s',
                     date('d.m.Y - H:i:s', (int)$objEvent->startTime)))
                 ->setDtEnd(\DateTime::createFromFormat('d.m.Y - H:i:s', date('d.m.Y - H:i:s', (int)$objEvent->endTime)))
-                ->setSummary(strip_tags($this->replaceInsertTags($objEvent->title)))
+                ->setSummary(strip_tags(\Controller::replaceInsertTags($objEvent->title)))
                 ->setUseUtc(false)
                 ->setLocation($objEvent->location)
+                ->setUrl($objEvent->url)
                 ->setNoTime($noTime);
-            // HOOK: modify the vEvent
-            if (isset($GLOBALS['TL_HOOKS']['modifyIcsFile']) && is_array($GLOBALS['TL_HOOKS']['modifyIcsFile'])) {
-                foreach ($GLOBALS['TL_HOOKS']['modifyIcsFile'] as $callback) {
-                    $this->import($callback[0]);
-                    $this->{$callback[0]}->{$callback[1]}($vEvent, $objEvent, $this);
-                }
-            }
+            
             $vCalendar->addComponent($vEvent);
-            header('Content-Type: text/calendar; charset=utf-8');
-            header('Content-Disposition: attachment; filename="' . $objEvent->alias . '.ics"');
-            echo $vCalendar->render();
-            exit;
+            $ics = $vCalendar->render();
+            if ($ics) {
+                $objFile = new \File('web/share/' . $objEvent->alias . '.ics');
+                $objFile->write($ics);
+                $objFile->close();
+            }
         }
         
     }
