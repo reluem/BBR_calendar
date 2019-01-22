@@ -1,6 +1,5 @@
 <?php
     
-    
     namespace Reluem\BBRCalendarBundle;
     
     use Codefog\EventsSubscriptions\Event\SubscribeEvent;
@@ -31,7 +30,7 @@
         }
         
         
-        public function generateIcsFile(CalendarEventsModel $objEvent, SubscriptionModel $objSubscription)
+        public function generateIcsFile(CalendarEventsModel $objEvent, SubscriptionModel $objSubscription): string
         {
             $vCalendar = new Calendar(Environment::get('url'));
             $vCalendar->setMethod('REQUEST');
@@ -66,7 +65,7 @@
             $vCalendar->addComponent($vEvent);
             $ics = $vCalendar->render();
             if ($ics) {
-                $objFile = new \File('web/share/invite_' . $objEvent->id . '.ics');
+                $objFile = new \File('system/tmp/invite_' . $objEvent->id . '.ics');
                 $objFile->write($ics);
                 $objFile->close();
                 return $objFile->path;
