@@ -12,6 +12,7 @@
     "contao/core-bundle": "^4.0",
     "contao/calendar-bundle": "^4.0",
     "contao-community-alliance/composer-plugin": "^3.0",
+    "codefog/contao-events_subscriptions": "2.8.*",
     "eluceo/ical": "~0.6"
   },
   "autoload": {
