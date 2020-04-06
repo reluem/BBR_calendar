@@ -16,6 +16,7 @@
     use Eluceo\iCal\Component\Event;
     use Eluceo\iCal\Property\Event\Organizer;
     use Patchwork\Utf8;
+    use \Haste\Util\StringUtil;
     
     
     class guestSubscriptionExt extends guestSubscription
@@ -25,8 +26,12 @@
         {
             $objEvent = \CalendarEventsModel::findOneBy('id', $this->subscriptionModel->pid);
             $buffer = parent::getNotificationTokens();
-            $buffer['ics_file'] = $this->generateIcsFile($objEvent, $this->subscriptionModel);
+            // if .ICS should be added to notification, call method
+            if ($objEvent->addICS) {
+                $buffer['ics_file'] = $this->generateIcsFile($objEvent, $this->subscriptionModel);
+            }
             return $buffer;
+            
         }
         
         
@@ -39,6 +44,11 @@
             if ($objEvent->startTime === $objEvent->startDate && $objEvent->endTime === $objEvent->endDate) {
                 $noTime = true;
             }
+            $desc = StringUtil::convertToText($objEvent->teaser, StringUtil::NO_TAGS);
+            if ($objEvent->eventAttendanceMode === 'OnlineEventAttendanceMode' && $objEvent->onlineDescription) {
+                $desc .= StringUtil::convertToText($objEvent->onlineDescription, StringUtil::NO_TAGS);
+            }
+            $location = ($objEvent->location ?: '') . (($objEvent->location && $objEvent->address) ? ', ' : '') . ($objEvent->address ?: '');
             $vEvent
                 ->setDtStart(\DateTime::createFromFormat('d.m.Y - H:i:s',
                     date('d.m.Y - H:i:s', (int)$objEvent->startTime)))
@@ -46,7 +56,7 @@
                 ->setDtStamp(\DateTime::createFromFormat('d.m.Y - H:i:s',
                     date('d.m.Y - H:i:s', (int)$objEvent->tstamp)))
                 ->setSummary(strip_tags(\Controller::replaceInsertTags($objEvent->title)))
-                ->setDescription(strip_tags(\Controller::replaceInsertTags($objEvent->title)) . "\n\nNehmen Sie an dem Meeting per Computer, Tablet oder Smartphone teil.\n" . $objEvent->url . "\n\nZum ersten Mal bei GoToMeeting? Hier können Sie eine Systemprüfung durchführen: https://link.gotomeeting.com/system-check")
+                ->setDescription($desc)
                 ->setUseUtc(false)
                 ->setOrganizer(new Organizer('MAILTO:c.rech@bbr-consulting.com',
                     ['CN' => 'Christian Rech']))
@@ -58,8 +68,8 @@
                         'RSVP' => 'TRUE',
                         'CN' => $objSubscription->firstname . ' ' . $objSubscription->lastname,
                     ])
-                ->setLocation($objEvent->location)
-                ->setUrl($objEvent->url)
+                ->setLocation($location)
+                ->setUrl($objEvent->onlineURL)
                 ->setNoTime($noTime);
             
             $vCalendar->addComponent($vEvent);
